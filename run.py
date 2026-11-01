@@ -200,9 +200,15 @@ def ensure_grabber() -> bool:
 
     exe = ROOT / "tools" / "douyinLive" / "douyinLive.exe"
     if not exe.is_file():
-        print(f"[!] 没有抓取工具：{exe}")
-        print("    下载：https://github.com/jwwsjlm/douyinLive/releases")
-        return False
+        # 首次运行自动补齐，clone 下来不用手动找下载、解压
+        print("[..] 缺少弹幕抓取工具，自动获取（约 12 MB，仅首次）…")
+        fetcher = ROOT / "tools" / "fetch_douyinlive.py"
+        rc = subprocess.call([PY, str(fetcher)])
+        if rc != 0 or not exe.is_file():
+            print("[!] 自动获取失败。手动下载：https://github.com/jwwsjlm/douyinLive/releases")
+            print(f"    解压到 {exe.parent}，或用 DOUYINLIVE_URL=<直链> 重试")
+            return False
+        print("[√] 抓取工具就绪")
 
     print("[..] 启动抓取服务…")
     p = subprocess.Popen([str(exe)], cwd=str(exe.parent),

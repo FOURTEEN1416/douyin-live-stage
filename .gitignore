@@ -47,6 +47,7 @@ avatar/pack2/*.png
 avatar/sit/*.png
 
 # ── 编辑器 / 系统 ─────────────────────────────
+.workbuddy/
 .workbuddy-ai/
 .idea/
 .vscode/

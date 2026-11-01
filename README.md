@@ -50,10 +50,26 @@ pip install -r requirements.txt
 | `opencv-python` / `numpy` | 画面合成、比例守护 |
 | `Pillow` | 截屏预处理、立绘切帧 |
 
-另有两样外部组件，不随仓库分发：
+依赖之外只剩两样东西，其中只有一件需要你动手：
 
-1. **VB-Cable 虚拟声卡** —— [vb-audio.com/Cable](https://vb-audio.com/Cable/)（免费版够用）。声音接线的三步配置见 [`开播指南.md`](开播指南.md)。
-2. **抖音弹幕抓取工具** —— [jwwsjlm/douyinLive](https://github.com/jwwsjlm/douyinLive)（MIT）。下载 release 解压到 `tools/douyinLive/`，或改用任意兼容工具，见下文「弹幕桥」。
+**1. VB-Cable 虚拟声卡（必装，手动）** —— [vb-audio.com/Cable](https://vb-audio.com/Cable/)，免费版够用。装完在系统声音设置里能看到 `CABLE Input` / `CABLE Output`。接线三步见 [`开播指南.md`](开播指南.md)。
+
+**2. 抖音弹幕抓取工具（不用手动装）** —— 首次运行 `run.py` 会自动从上游拉取
+[jwwsjlm/douyinLive](https://github.com/jwwsjlm/douyinLive)（MIT）的 Windows 包（约 13 MB），
+校验 sha256 后解压到 `tools/douyinLive/`，然后直接拉起。
+
+也可以提前单独跑：
+
+```bash
+python tools/fetch_douyinlive.py          # 缺才装（幂等，已装则跳过）
+python tools/fetch_douyinlive.py --check  # 只看状态，不下载
+python tools/fetch_douyinlive.py --force  # 重装 / 升级到最新
+```
+
+- 解压时**不覆盖**你自己的 `config.yaml`
+- 平台自适应：Windows / Linux / macOS，x64 / arm64
+- 下载不通时用 `DOUYINLIVE_VERSION=v2.3.2` 锁版本，或 `DOUYINLIVE_URL=<压缩包直链>` 换源
+- 只支持 Windows 的场景请忽略 Linux/macOS 分支（本项目主流程依赖 Windows 窗口采集）
 
 ## 开播流程（三步）
 
@@ -157,7 +173,8 @@ set VISION_MODEL=xxx-vl
 
 抖音没有开放直播间消息接口，必须先有一个第三方抓取工具在跑，再把它的 ws 地址给桥。
 
-**本项目已经内置并接好一个**：`tools/douyinLive/`（[jwwsjlm/douyinLive](https://github.com/jwwsjlm/douyinLive) v2.3.2，Go 写的，匿名可用、不用登录）。
+**首次运行会自动装好一个**：`tools/douyinLive/`（[jwwsjlm/douyinLive](https://github.com/jwwsjlm/douyinLive) v2.3.2，Go 写的，匿名可用、不用登录）。
+二进制不进仓库（40 MB），由 `tools/fetch_douyinlive.py` 按平台拉取 + sha256 校验，详见「环境」。
 
 只要在 `.env` 里填一行：
 
@@ -446,6 +463,7 @@ douyin-live-stage/
 ├─ fake_dm.py           假弹幕源：本地 ws，用来压测整条链路
 ├─ env_loader.py        .env 读取（已设环境变量优先）
 ├─ tools/               辅助脚本：取景校验 / 选窗口 / 切帧 / 试音色
+│  └─ fetch_douyinlive.py  自动获取弹幕抓取工具（run.py 首次运行会调用）
 ├─ avatar/sit/          立绘差分 13 张（webp，实际加载）
 ├─ data/                话题库 topics.json；运行状态文件不入库
 └─ docs/                README 配图
