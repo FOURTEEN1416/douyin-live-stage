@@ -1,0 +1,30 @@
+{
+  "_note": "rect=[左,上,宽,高]，**逻辑像素**（DPI 150% 下 600×1067 物理是 900×1600）。code 必须锁 9:16 = 槽位 1080×1920 的比例，否则 compositor 的 fit_cover 会静默裁两侧。改完跑 python windows_layout.py --apply；体检跑 python tools/check_live.py",
+  "code": {
+    "match": "ZCode",
+    "rect": [
+      0,
+      0,
+      600,
+      1067
+    ]
+  },
+  "web": {
+    "match": "Edge",
+    "rect": [
+      857,
+      0,
+      850,
+      509
+    ]
+  },
+  "wechat": {
+    "match": "微信",
+    "rect": [
+      1700,
+      400,
+      420,
+      560
+    ]
+  }
+}

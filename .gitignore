@@ -1,0 +1,54 @@
+# ── 密钥与本地配置 ─────────────────────────────
+.env
+.env.local
+*.key
+*.pem
+
+# ── Python ────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── 运行产物（不进版本库）─────────────────────
+audio/
+logs/
+_logs/
+.run.lock
+data/_raw_msgs.jsonl
+data/live_state.json
+data/stage_memory.json
+data/*.bak*
+*.log
+
+# ── 本地备份与调试截图 ────────────────────────
+*.bak
+*.bak*
+*.land.bak
+_*.png
+_*.jpg
+_test_ws.py
+_verify_*.py
+*.tmp
+analysis/
+cover/
+
+# ── 第三方弹幕抓取工具（体积大，含 Windows 二进制）──
+# 请自行从 https://github.com/jwwsjlm/douyinLive 下载
+tools/douyinLive/
+
+# ── 音频素材（版权原因不入库，请自备）─────────
+bgm/*.mp3
+
+# ── 立绘原始素材与预览图（只提交实际加载的 webp）──
+avatar/sit_raw/
+avatar/sit2/
+avatar/pack2/*.png
+avatar/sit/*.png
+
+# ── 编辑器 / 系统 ─────────────────────────────
+.workbuddy-ai/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini

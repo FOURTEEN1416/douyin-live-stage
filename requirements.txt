@@ -1,0 +1,15 @@
+# 核心依赖 —— Windows 10/11 + Python 3.12+
+# 安装：pip install -r requirements.txt
+
+windows-capture>=1.0.0   # 按窗口句柄采集真实窗口画面（compositor.py）
+pywebview>=5.0           # 透明置顶悬浮窗（overlay_win.py）
+sounddevice>=0.4.6       # 语音直接推到 VB-Cable 虚拟声卡（audio_out.py）
+opencv-python>=4.8.0     # 画面合成与比例守护（compositor.py）
+numpy>=1.24              # 音频 / 图像数组
+Pillow>=10.0             # 截屏预处理与立绘切帧（narrator.py / tools/make_poses.py）
+
+# 可选：OBS 接线（本项目已弃用，不再需要）
+# obsws-python>=1.7
+
+# 说明：弹幕抓取工具 tools/douyinLive 为独立二进制，不随仓库分发，
+#      请见 README「环境」一节的下载地址。

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>大肥鱼舞台</title>
+<link rel="stylesheet" href="stage.css">
+</head>
+<body class="layout-tri">
+
+<div id="stage">
+
+  <!-- ========== 屏幕卡：合成器拼好的真实桌面，整块嵌进画布 ==========
+       v4 起真实窗口不再是"背景"，而是一张带框的屏幕卡——
+       深色舞台 + 白底 ZCode 窗口，观感才统一（白底当背景会把叠层全糊掉）。
+       ?v=full 可以退回全屏铺满的老样子。 -->
+  <div id="screen">
+    <img id="bg" src="http://127.0.0.1:8791/bg.mjpeg" alt=""
+         onerror="this.style.display='none'">
+
+    <!-- 取景框（固定分镜，跟合成器的槽位一致） -->
+    <div id="frames">
+      <div class="frame frame-a"></div>
+      <div class="frame frame-b"><span class="tag">看看谁又来找我了</span></div>
+      <div class="frame frame-c"><span class="tag">有人来找我聊天</span></div>
+      <div class="missing miss-code" id="miss-code">代码窗口未开启</div>
+      <div class="missing miss-web" id="miss-web">网站窗口未开启</div>
+      <div class="missing miss-wechat" id="miss-wechat">微信窗口未开启</div>
+    </div>
+
+    <!-- 演示模式：框内填假内容 -->
+    <div class="demo-bg" aria-hidden="true">
+      <div class="demo-code">
+        <div class="tabs"><span class="t on">agentctl.py</span><span class="t">run.log</span></div>
+        <pre><code><span class="ln">01</span><span class="kw">def</span> <span class="fn">build_plan</span>(adapters):
+<span class="ln">02</span>    plan = []
+<span class="ln">03</span>    <span class="kw">for</span> name, ad <span class="kw">in</span> adapters.items():
+<span class="ln">04</span>        <span class="cm"># 已清除的平台不再建链接</span>
+<span class="ln">05</span>        <span class="kw">if not</span> ad.get(<span class="st">"present"</span>, <span class="kw">True</span>):
+<span class="ln">06</span>            <span class="kw">continue</span>
+<span class="ln">07</span>        plan.append((name, ad[<span class="st">"skills"</span>][<span class="st">"root"</span>]))
+<span class="ln">08</span>    <span class="kw">return</span> plan</code></pre>
+        <div class="term"><span class="ok">✔</span> 5 platforms synced · 0 errors</div>
+      </div>
+
+    <div class="demo-web">
+      <div class="wbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><em>139.199.199.174/register</em></div>
+      <div class="wbody">
+        <div class="wtitle">创建账号</div>
+        <div class="wfield">手机号 <span>138****0000</span></div>
+        <div class="wfield">验证码 <span>8 2 4 1</span></div>
+        <div class="wbtn">注册并创建角色</div>
+        <div class="wok">✔ 注册成功，正在生成角色…</div>
+      </div>
+    </div>
+
+    <div class="demo-chat">
+      <div class="bub me">还行吧</div>
+      <div class="bub">那就好。今天数学部分感觉如何</div>
+      <div class="bub me">你给我找一段雨声音频呗</div>
+      <div class="bub">好的，我这就找一段雨声的音频发给你。</div>
+    </div>
+    </div><!-- /demo-bg -->
+
+    <!-- 屏幕卡上的标签：明示「这是真机在跑」，我们的特色 -->
+    <div id="codeTag"><i></i>ZCode · 真机在跑</div>
+  </div><!-- /screen -->
+
+  <!-- ========== 顶部 HUD：三行紧凑条，尽量少压画面 ========== -->
+  <div id="hud">
+    <div class="hud-main">
+      <span class="hud-label">余额</span>
+      <span class="hud-num" id="hudBalance">0</span>
+      <span class="hud-unit">token</span>
+      <span class="hud-right" id="hudMinutes">约能聊 0 分钟</span>
+    </div>
+    <div class="hud-bar"><i id="hudBar" style="width:0%"></i></div>
+    <div class="hud-row2">
+      <span class="pill" id="hudStatus">专心工作中</span>
+      <span class="hud-cd" id="hudCd">20s</span>
+      <span class="pill-speed">⚡ <em id="hudSpeed">×3.0</em></span>
+    </div>
+    <div class="hud-row3">
+      <span class="hud-stats">专注 <b id="hudFocus">0</b> · 白干 <b id="hudSlack">0</b> · 被抓 <b id="hudCaught">0</b></span>
+      <span class="hud-clock" id="hudClock">03:12</span>
+    </div>
+    <div class="hud-rule">
+      <span class="rule-tag" id="hudRuleTag">员工守则</span>
+      <span class="rule-txt" id="hudRule">赚够 token 就能合法摸鱼</span>
+    </div>
+  </div>
+
+  <!-- ========== 倒计时环（v3 版式用；v4 换成 HUD 里的 chip） ========== -->
+  <div id="ring">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+      <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"
+              stroke-dasharray="326.7" stroke-dashoffset="0"></circle>
+    </svg>
+    <b id="ringNum">20</b>
+    <span class="ring-unit">秒</span>
+  </div>
+
+  <!-- ========== 飘字：白干了 −200 / 礼物 +50 ========== -->
+  <div id="pulse"></div>
+
+  <!-- ========== 立绘：v4 是带框的画中画，贴在代码窗口右下角 ============ -->
+  <div class="avatar-wrap" id="avatarWrap">
+    <div class="glow"></div>
+    <img id="avatar" src="avatar/sit/base.webp?v=6" alt="">
+    <div class="note">♪</div>
+    <span class="av-tag"><i></i>AI 形象</span>
+  </div>
+
+  <!-- ========== 弹幕历史（v4 默认隐藏，气泡已经够了） ========== -->
+  <div class="danmaku" id="danmaku"></div>
+
+  <!-- ========== 台词区：弹幕气泡 + 她的回答（逐字） ========== -->
+  <div id="talk">
+    <div class="bubble" id="bubble">
+      <span class="bub-ico">💬</span><span class="bub-name" id="bubbleName"></span><span id="bubbleText"></span>
+    </div>
+    <div class="reply" id="reply"><span class="reply-text" id="replyText"></span><span class="caret" id="caret"></span></div>
+  </div>
+
+  <!-- ========== 底部标题卡：v4 收到 301px（16%），只占一行半 ========== -->
+  <!-- 底部导引带：进房 3 秒内要知道「这是什么 / 我能干嘛 / 现在进度多少」
+       高度卡在 1325~1661 —— 1661 以下被抖音输入框压住，再往下就白写了 -->
+  <div id="guide">
+    <div class="g-pos" id="gPos">我在给你们<em>打工</em> · 摸鱼会被抓 · token 扣光就断电 30 秒</div>
+    <div class="g-plays">
+      <div class="g-play g-hot">
+        <span class="g-ico">👀</span>
+        <b>抓我摸鱼</b>
+        <em>真在摸才算·诬告 +10</em>
+      </div>
+      <div class="g-play">
+        <span class="g-ico">🎵</span>
+        <b>点歌</b>
+        <em>弹幕「点歌 雨声」</em>
+      </div>
+      <div class="g-play">
+        <span class="g-ico">🎁</span>
+        <b>送礼物</b>
+        <em>+50 token 给我发工资</em>
+      </div>
+      <div class="g-play">
+        <span class="g-ico">💬</span>
+        <b>发弹幕</b>
+        <em>我念着你的名字回</em>
+      </div>
+    </div>
+    <div class="g-kpi">
+      <span class="k-lab">今日 KPI</span>
+      <i class="k-bar"><em id="kpiBar"></em></i>
+      <b id="kpiNum">0 / 3000</b>
+    </div>
+  </div>
+
+  <!-- 余额扣光 → 断电黑屏 30 秒 -->
+  <div id="blackout">
+    <div class="bk-inner">
+      <b>余额扣光</b>
+      <span>我断电了 · <em id="bkLeft">30</em> 秒后重启</span>
+    </div>
+  </div>
+  </div>
+
+  <!-- ========== 顶栏（单行胶囊，不挡窗口内容） ============ -->
+</div>
+
+<script src="stage.js"></script>
+</body>
+</html>

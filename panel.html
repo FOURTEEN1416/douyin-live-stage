@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>舞台控制台</title>
+<style>
+  :root{--ink:#e8eef7;--dim:#8b9bb0;--line:rgba(255,255,255,.1);--acc:#4fa8ff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#0d1117;color:var(--ink);min-height:100vh;
+    font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    padding:38px 22px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:21px;font-weight:700;margin-bottom:6px}
+  .hint{color:var(--dim);font-size:13px;margin-bottom:26px}
+  .hint code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px}
+  section{border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;background:#11161e}
+  label{display:block;font-size:13px;color:var(--dim);margin-bottom:7px;letter-spacing:.04em}
+  textarea,input{
+    width:100%;background:#0a0e14;border:1px solid var(--line);border-radius:8px;
+    color:var(--ink);padding:10px 12px;font:inherit;outline:none;resize:vertical;
+  }
+  textarea:focus,input:focus{border-color:var(--acc)}
+  .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  button{
+    background:var(--acc);color:#06111f;border:0;border-radius:8px;
+    padding:9px 18px;font:inherit;font-weight:600;cursor:pointer;
+  }
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  button:active{transform:translateY(1px)}
+  .msg{margin-top:10px;font-size:13px;color:#5fd38d;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>舞台控制台</h1>
+  <p class="hint">
+    把台词推到舞台 → 自动上字幕 + 形象进入说话状态。舞台页：<code>/stage.html</code>（OBS 用，透明）<br>
+    调试预览用 <code>/stage.html?demo=1</code>，会带一个模拟代码背景。
+  </p>
+
+  <section>
+    <label>她说的话</label>
+    <textarea id="say" rows="3" placeholder="比如：我现在在把弹幕桥接进舞台，弹幕会走本地接口灌进来。"></textarea>
+    <div class="row">
+      <button onclick="say()">推到舞台</button>
+      <button class="ghost" onclick="post('/api/clear',{})">清空画面</button>
+      <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--dim)">
+        <input type="checkbox" id="vox" checked style="width:auto"> 带语音
+      </label>
+      <span id="tts" style="margin-left:auto;font-size:12px;color:var(--dim);align-self:center"></span>
+    </div>
+    <div class="msg" id="m1"></div>
+  </section>
+
+  <section>
+    <label>让她唱两句（MiMo 唱歌模式）</label>
+    <input id="lyrics" placeholder="歌词，例如：代码敲到凌晨三点半，bug 还没修完">
+    <div class="row">
+      <button onclick="sing()">开唱</button>
+      <span style="font-size:12px;color:var(--dim);align-self:center">留空则用默认两句</span>
+    </div>
+    <div class="msg" id="m4"></div>
+  </section>
+
+  <section>
+    <label>发一条弹幕（模拟观众）</label>
+    <input id="uname" placeholder="昵称，留空则为「水友」">
+    <div style="height:10px"></div>
+    <input id="dtext" placeholder="弹幕内容">
+    <div class="row"><button onclick="danmu()">发送</button></div>
+    <div class="msg" id="m2"></div>
+  </section>
+
+  <section>
+    <label>标题 / 当前在做的事</label>
+    <input id="title" placeholder="正在写代码">
+    <div style="height:10px"></div>
+    <input id="sub" placeholder="副标题，一句话说明">
+    <div class="row"><button onclick="setTitle()">更新</button></div>
+    <div class="msg" id="m3"></div>
+  </section>
+</div>
+
+<script>
+async function post(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+async function say() {
+  const t = document.getElementById('say').value.trim();
+  if (!t) return;
+  const voice = document.getElementById('vox').checked;
+  document.getElementById('m1').textContent = voice ? '正在合成语音…' : '';
+  const j = await post('/api/say', { text: t, voice });
+  let msg = j.ok ? `已推送，停留 ${j.hold_s} 秒` : (j.error || '失败');
+  if (voice && j.ok && !j.audio) msg += '（没出声：TTS 后端不可用）';
+  if (voice && j.ok && j.tts && j.tts.error) msg += `（${j.tts.error}）`;
+  document.getElementById('m1').textContent = msg;
+  refreshTts();
+}
+
+async function refreshTts() {
+  try {
+    const s = await (await fetch('/api/tts/stats', { cache: 'no-store' })).json();
+    const el = document.getElementById('tts');
+    if (!s.enabled) { el.textContent = 'TTS 未配置 key'; return; }
+    const short = (s.model || '').replace('mimo-v2.5-tts', 'tts');
+    el.textContent = `${short}·${s.voice || '-'} · 已说 ${s.seconds.toFixed(0)}s`;
+  } catch (e) { /* ignore */ }
+}
+
+async function danmu() {
+  const uname = document.getElementById('uname').value.trim();
+  const text = document.getElementById('dtext').value.trim();
+  if (!text) return;
+  const j = await post('/api/danmaku', { uname, text });
+  document.getElementById('m2').textContent = j.ok ? '已发送' : (j.error || '失败');
+  document.getElementById('dtext').value = '';
+}
+async function sing() {
+  const t = document.getElementById('lyrics').value.trim() || '晚风吹过窗台的灯，我把今天写成一行';
+  document.getElementById('m4').textContent = '合成中…';
+  const j = await post('/api/sing', { lyrics: t });
+  document.getElementById('m4').textContent = j.ok
+    ? `开唱，时长 ${j.hold_s} 秒`
+    : ('失败：' + (j.tts && j.tts.error ? j.tts.error : '未知'));
+}
+
+async function setTitle() {
+  const title = document.getElementById('title').value.trim();
+  const sub = document.getElementById('sub').value.trim();
+  await post('/api/title', { title, sub });
+  document.getElementById('m3').textContent = '已更新';
+}
+
+refreshTts();
+setInterval(refreshTts, 5000);
+</script>
+</body>
+</html>
