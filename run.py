@@ -116,6 +116,21 @@ def wait_for_server(port: int, timeout: float = 30.0) -> bool:
     return False
 
 
+def ensure_env_file() -> None:
+    """没有 .env 就从 .env.example 生成一份 —— 省掉手动复制的这一步，key 仍要自己填。"""
+    env = ROOT / ".env"
+    sample = ROOT / ".env.example"
+    if env.is_file() or not sample.is_file():
+        return
+    env.write_text(sample.read_text(encoding="utf-8"), encoding="utf-8")
+    print("[i] 已从 .env.example 生成 .env —— 填上 MIMO_API_KEY 就会出声")
+    try:
+        import env_loader
+        env_loader.load(env)
+    except Exception:
+        pass
+
+
 def check_env() -> None:
     try:
         import env_loader  # noqa: F401
@@ -179,6 +194,56 @@ def acquire_lock():
     lock.write_text(str(os.getpid()), encoding="utf-8")
     atexit.register(lambda: lock.unlink(missing_ok=True))
     print(f"[√] 单实例锁已建立（pid={os.getpid()}）")
+
+
+def _import_names() -> list[tuple[str, str]]:
+    """(import 名, pip 包名) —— 只列真正会崩的那几个。"""
+    deps = [
+        ("cv2", "opencv-python"),
+        ("numpy", "numpy"),
+        ("PIL", "Pillow"),
+        ("webview", "pywebview"),
+        ("sounddevice", "sounddevice"),
+    ]
+    if sys.platform.startswith("win"):
+        deps.append(("windows_capture", "windows-capture"))
+    return deps
+
+
+def missing_deps() -> list[str]:
+    import importlib.util
+
+    return [pkg for mod, pkg in _import_names() if importlib.util.find_spec(mod) is None]
+
+
+def ensure_deps(skip: bool = False) -> None:
+    """缺依赖就装 —— clone 下来一条命令能跑，不必先读文档。
+
+    只处理"会直接 ImportError 崩掉"的那几个包，装完复查，半残环境不进主流程。
+    """
+    miss = missing_deps()
+    if not miss:
+        return
+
+    print(f"[!] 缺少依赖：{', '.join(miss)}")
+    if skip:
+        print("    --skip-deps 已指定，跳过安装。手动执行：pip install -r requirements.txt")
+        return
+
+    req = ROOT / "requirements.txt"
+    if not req.is_file():
+        print("    没找到 requirements.txt，请手动安装：" + " ".join(miss))
+        raise SystemExit(1)
+
+    print("[..] 正在安装依赖（首次约 1–3 分钟，取决于网速）…")
+    rc = subprocess.call([PY, "-m", "pip", "install", "-r", str(req)])
+
+    still = missing_deps()
+    if rc != 0 or still:
+        print(f"[!] 安装未完成，仍缺：{', '.join(still) or '（pip 返回非 0）'}")
+        print(f"    手动执行：{PY} -m pip install -r {req}")
+        raise SystemExit(1)
+    print("[√] 依赖就绪")
 
 
 def ensure_grabber() -> bool:
@@ -260,8 +325,12 @@ def main() -> None:
     ap.add_argument("--no-reply", action="store_true", help="弹幕只读不答")
     ap.add_argument("--noframes", action="store_true",
                     help="悬浮层不画取景框（直播用，只留立绘/字幕/弹幕）")
+    ap.add_argument("--skip-deps", action="store_true",
+                    help="跳过自动安装依赖（默认缺什么装什么）")
     args = ap.parse_args()
 
+    ensure_deps(skip=args.skip_deps)
+    ensure_env_file()
     acquire_lock()
     check_env()
     show_intro(args.port)

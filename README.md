@@ -36,10 +36,10 @@
 
 ## 环境
 
-Windows 10/11 + Python 3.12。装依赖：
+Windows 10/11 + Python 3.12。**依赖、`.env`、弹幕工具都不用手动装** —— `run.py` 启动时自检，缺什么补什么，你只需要填两个 key：
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt   # 想手动装也行，不影响
 ```
 
 | 依赖 | 用途 |
@@ -67,15 +67,14 @@ python tools/fetch_douyinlive.py --force  # 重装 / 升级到最新
 ```
 
 - 解压时**不覆盖**你自己的 `config.yaml`
-- 平台自适应：Windows / Linux / macOS，x64 / arm64
+- 平台自适应：Windows / Linux / macOS，x64 / arm64（抓取工具本身跨平台；本项目主流程的窗口采集与悬浮层只在 Windows 上验证过）
 - 下载不通时用 `DOUYINLIVE_VERSION=v2.3.2` 锁版本，或 `DOUYINLIVE_URL=<压缩包直链>` 换源
-- 只支持 Windows 的场景请忽略 Linux/macOS 分支（本项目主流程依赖 Windows 窗口采集）
 
 ## 开播流程（三步）
 
-**1. 配密钥** —— 复制 `.env.example` 为 `.env`，填 `MIMO_API_KEY`（语音）和 `VISION_API_KEY`（识图，DeepSeek）。已设的环境变量优先，不会覆盖。
+**1. 配密钥** —— 首次运行会自动从 `.env.example` 生成 `.env`，你只需往里填两个值：`MIMO_API_KEY`（语音，TTS）、`VISION_API_KEY`（识图）。已设的环境变量优先，不会覆盖。
 
-**2. 起服务**
+**2. 起服务**（首次会自动装缺的依赖、拉取弹幕抓取工具，约 1–2 分钟）
 
 ```bash
 python run.py --mode auto          # 舞台 + 悬浮层 + 布局守护 + 自动旁白
